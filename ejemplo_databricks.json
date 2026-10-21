@@ -1,0 +1,15 @@
+{
+  "dataframe_split": {
+    "columns": [
+      "Area", "Perimeter", "Major_Axis_Length", "Minor_Axis_Length",
+      "Eccentricity", "Convex_Area", "Extent", "Axis_Ratio",
+      "Solidity", "Circularity"
+    ],
+    "data": [[
+      15231, 525.5789794921875, 229.7498779296875,
+      85.09378814697266, 0.9288820028305054, 15617,
+      0.5728955268859863, 2.699960630884914,
+      0.9752833450726772, 0.6928868314940618
+    ]]
+  }
+}

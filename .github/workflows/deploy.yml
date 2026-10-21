@@ -1,0 +1,117 @@
+name: Desplegar API de arroz en Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: rg-mlops-ean
+  ENVIRONMENT: env-mi-proyecto
+  ACR_NAME: acrricejavie20261017
+  APP_NAME: api-arroz-mlops
+  API_VERSION: 2024-03-01
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Iniciar sesión en Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Iniciar sesión en el Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_NAME }}.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Construir y subir la imagen
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.ACR_NAME }}.azurecr.io/rice-api:${{ github.sha }}
+
+      - name: Crear o actualizar Container App
+        shell: bash
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          DATABRICKS_URL: ${{ secrets.DATABRICKS_URL }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$ACR_USERNAME"
+          test -n "$ACR_PASSWORD"
+          test -n "$DATABRICKS_URL"
+          test -n "$DATABRICKS_TOKEN"
+
+          SUBSCRIPTION_ID=$(az account show --query id --output tsv)
+          ENV_ID=$(az resource show --resource-group "$RESOURCE_GROUP" --name "$ENVIRONMENT" --resource-type Microsoft.App/managedEnvironments --query id --output tsv)
+          LOCATION=$(az resource show --resource-group "$RESOURCE_GROUP" --name "$ENVIRONMENT" --resource-type Microsoft.App/managedEnvironments --query location --output tsv)
+          IMAGE="${ACR_NAME}.azurecr.io/rice-api:${GITHUB_SHA}"
+          APP_URI="https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.App/containerApps/${APP_NAME}?api-version=${API_VERSION}"
+
+          trap 'rm -f app.json' EXIT
+          jq -n \
+            --arg location "$LOCATION" \
+            --arg env_id "$ENV_ID" \
+            --arg image "$IMAGE" \
+            --arg acr_server "${ACR_NAME}.azurecr.io" \
+            --arg acr_username "$ACR_USERNAME" \
+            --arg acr_password "$ACR_PASSWORD" \
+            --arg databricks_url "$DATABRICKS_URL" \
+            --arg databricks_token "$DATABRICKS_TOKEN" \
+            '{
+              location: $location,
+              properties: {
+                environmentId: $env_id,
+                configuration: {
+                  activeRevisionsMode: "Single",
+                  ingress: { external: true, targetPort: 8000, transport: "auto" },
+                  registries: [{
+                    server: $acr_server,
+                    username: $acr_username,
+                    passwordSecretRef: "acr-password"
+                  }],
+                  secrets: [
+                    { name: "acr-password", value: $acr_password },
+                    { name: "databricks-token", value: $databricks_token }
+                  ]
+                },
+                template: {
+                  containers: [{
+                    name: "api",
+                    image: $image,
+                    resources: { cpu: 0.5, memory: "1Gi" },
+                    env: [
+                      { name: "DATABRICKS_URL", value: $databricks_url },
+                      { name: "DATABRICKS_TOKEN", secretRef: "databricks-token" }
+                    ]
+                  }],
+                  scale: { minReplicas: 0, maxReplicas: 1 }
+                }
+              }
+            }' > app.json
+
+          az rest --method put --url "$APP_URI" --body @app.json --headers 'Content-Type=application/json' --output none
+
+          for intento in {1..60}; do
+            ESTADO=$(az rest --method get --url "$APP_URI" --query properties.provisioningState --output tsv)
+            echo "Estado: $ESTADO"
+            if [ "$ESTADO" = "Succeeded" ]; then break; fi
+            if [ "$ESTADO" = "Failed" ]; then exit 1; fi
+            sleep 10
+          done
+          test "$ESTADO" = "Succeeded"
+
+          FQDN=$(az rest --method get --url "$APP_URI" --query properties.configuration.ingress.fqdn --output tsv)
+          test -n "$FQDN"
+          echo "API pública: https://${FQDN}"
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors "https://${FQDN}/health"
