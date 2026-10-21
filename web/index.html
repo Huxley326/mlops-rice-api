@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173e35">
+  <title>Clasificador de arroz | Cammeo u Osmancik</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #173b32;
+      --muted: #586b64;
+      --line: #dbe5dc;
+      --cream: #f6f7f0;
+      --white: #ffffff;
+      --green: #195e43;
+      --green-dark: #124c36;
+      --gold: #e4b45d;
+      --red: #a13130;
+      --shadow: 0 20px 60px rgba(24, 55, 43, .09);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background: radial-gradient(circle at 90% 4%, #e4eddd 0, transparent 29rem), var(--cream);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    button, input { font: inherit; }
+    .topbar {
+      background: var(--ink);
+      color: white;
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+    }
+    .topbar-inner, .wrap { width: min(1160px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 1rem; font-weight: 750; letter-spacing: .01em; }
+    .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: #2b6c50; }
+    .status { display: flex; align-items: center; gap: 8px; color: #d4e9db; font-size: .85rem; }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; background: #f2c76e; box-shadow: 0 0 0 4px rgba(242, 199, 110, .15); }
+    .status-dot.ok { background: #9de0a5; box-shadow: 0 0 0 4px rgba(157, 224, 165, .16); }
+    .status-dot.bad { background: #f3a09a; box-shadow: 0 0 0 4px rgba(243, 160, 154, .16); }
+    .wrap { padding: 52px 0 56px; }
+    .eyebrow { color: var(--green); font-size: .76rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .hero { display: grid; grid-template-columns: 1fr 300px; align-items: center; gap: 34px; margin-bottom: 34px; }
+    h1 { margin: 12px 0 16px; max-width: 760px; font-size: clamp(2.1rem, 4.4vw, 3.9rem); line-height: 1.09; letter-spacing: -.045em; }
+    .hero p { max-width: 690px; margin: 0; color: var(--muted); font-size: 1.08rem; }
+    .hero-art { height: 170px; position: relative; border-radius: 26px; overflow: hidden; background: linear-gradient(135deg, #dcebd6, #eef2d9); }
+    .hero-art::before, .hero-art::after { content: ""; position: absolute; width: 240px; height: 240px; border: 1px solid rgba(33, 88, 59, .16); border-radius: 50%; }
+    .hero-art::before { left: -120px; top: -76px; }
+    .hero-art::after { right: -104px; bottom: -142px; }
+    .grain { position: absolute; width: 22px; height: 74px; border-radius: 50% 50% 48% 48%; background: linear-gradient(90deg, #d59d40, #f5da98 50%, #d8a94d); border: 1px solid #c99037; box-shadow: 0 10px 18px rgba(101, 73, 20, .16); transform: rotate(40deg); }
+    .grain.one { left: 90px; top: 35px; }
+    .grain.two { left: 150px; top: 56px; transform: rotate(-24deg); }
+    .grain.three { left: 210px; top: 22px; transform: rotate(22deg); }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(290px, .86fr); gap: 24px; align-items: start; }
+    .card { background: var(--white); border: 1px solid #e3e9e0; border-radius: 22px; box-shadow: var(--shadow); }
+    .form-card { padding: 30px; }
+    .card-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    h2 { font-size: 1.45rem; letter-spacing: -.025em; margin: 0 0 4px; }
+    .card-head p, .side-card p { color: var(--muted); margin: 0; font-size: .91rem; }
+    .step-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; height: 36px; border-radius: 12px; background: #e9f3eb; color: var(--green); font-size: .79rem; font-weight: 800; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .field label { display: block; margin-bottom: 6px; font-size: .9rem; font-weight: 720; }
+    .field input {
+      width: 100%; height: 46px; padding: 0 13px; color: var(--ink); background: #fcfdf9;
+      border: 1px solid #c9d8cd; border-radius: 10px; outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(25, 94, 67, .13); }
+    .field input::placeholder { color: #9aa8a0; }
+    .field small { display: block; margin-top: 6px; color: #65766d; font-size: .76rem; min-height: 1.1em; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 27px; }
+    .button { min-height: 45px; padding: 10px 17px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; font-weight: 740; transition: transform .15s, background .15s; }
+    .button:hover:not(:disabled) { transform: translateY(-1px); }
+    .button:disabled { opacity: .65; cursor: wait; }
+    .button-primary { background: var(--green); color: white; }
+    .button-primary:hover:not(:disabled) { background: var(--green-dark); }
+    .button-secondary { color: var(--green); background: #ecf4ed; border-color: #d5e6d8; }
+    .button-text { color: var(--muted); background: transparent; }
+    .help-line { margin: 17px 0 0; color: var(--muted); font-size: .78rem; }
+    .side { display: grid; gap: 18px; }
+    .side-card { padding: 25px; }
+    .computed { display: grid; gap: 0; margin-top: 14px; }
+    .computed-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: .89rem; }
+    .computed-row strong { font-variant-numeric: tabular-nums; color: var(--green); }
+    .formula-note { padding-top: 11px; border-top: 1px solid var(--line); font-size: .78rem !important; }
+    .result-card { min-height: 210px; }
+    .result-empty { min-height: 130px; display: flex; align-items: center; color: var(--muted); font-size: .9rem; }
+    .result-label { display: block; margin-bottom: 7px; font-size: .75rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .result-name { font-size: clamp(2.1rem, 4vw, 3rem); line-height: 1.05; font-weight: 800; letter-spacing: -.04em; }
+    .result-code { display: inline-block; margin-top: 14px; padding: 5px 10px; border-radius: 8px; font-size: .79rem; font-weight: 750; }
+    .result-success { color: #15573d; }
+    .result-success .result-code { background: #e3f3e8; }
+    .result-secondary { color: #9b5a12; }
+    .result-secondary .result-code { background: #fbefd7; }
+    .notice { margin-top: 16px; padding: 11px 13px; border-radius: 9px; font-size: .85rem; }
+    .notice.error { color: #852c2a; background: #fff0ee; border: 1px solid #f4ccc8; }
+    .notice.wait { color: #5d4b1a; background: #fff8e7; border: 1px solid #f1dfac; }
+    .hidden { display: none !important; }
+    .footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 26px; color: var(--muted); font-size: .78rem; }
+    .footer a { color: var(--green); }
+    @media (max-width: 850px) { .hero { grid-template-columns: 1fr; } .hero-art { display: none; } .workspace { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) {
+      .topbar-inner, .wrap { width: min(100% - 28px, 1160px); }
+      .wrap { padding-top: 35px; }
+      .topbar { min-height: 66px; }
+      .brand { font-size: .88rem; }
+      .status { font-size: .72rem; }
+      .form-card, .side-card { padding: 21px; }
+      .fields { grid-template-columns: 1fr; gap: 15px; }
+      .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+            <path d="M5 19c7-2 11-6 14-14M8 15c-2-2-2-4-1-6 3 0 5 1 6 3M13 10c-1-3 0-5 2-7 2 2 3 4 2 6" stroke="#f6dda0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        Arroz · Clasificación de granos
+      </div>
+      <div class="status" aria-live="polite"><span id="statusDot" class="status-dot"></span><span id="statusText">Comprobando servicio</span></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero" aria-labelledby="pageTitle">
+      <div>
+        <div class="eyebrow">Modelo Cammeo / Osmancik</div>
+        <h1 id="pageTitle">Identifica la variedad de un grano de arroz.</h1>
+        <p>Introduce sus medidas físicas. El formulario calcula automáticamente tres indicadores de forma y consulta el modelo desplegado.</p>
+      </div>
+      <div class="hero-art" aria-hidden="true"><span class="grain one"></span><span class="grain two"></span><span class="grain three"></span></div>
+    </section>
+
+    <div class="workspace">
+      <section class="card form-card" aria-labelledby="formTitle">
+        <div class="card-head">
+          <div><h2 id="formTitle">Medidas del grano</h2><p>Escribe las siete variables originales del dataset.</p></div>
+          <span class="step-badge" aria-hidden="true">01</span>
+        </div>
+        <form id="riceForm">
+          <div class="fields">
+            <div class="field"><label for="Area">Área</label><input id="Area" name="Area" type="number" min="1" step="1" required placeholder="Ej. 15231"><small>Area · entero mayor que 0</small></div>
+            <div class="field"><label for="Perimeter">Perímetro</label><input id="Perimeter" name="Perimeter" type="number" min="0.000001" step="any" required placeholder="Ej. 525.579"><small>Perimeter · mayor que 0</small></div>
+            <div class="field"><label for="Major_Axis_Length">Longitud del eje mayor</label><input id="Major_Axis_Length" name="Major_Axis_Length" type="number" min="0.000001" step="any" required placeholder="Ej. 229.75"><small>Major_Axis_Length · mayor que 0</small></div>
+            <div class="field"><label for="Minor_Axis_Length">Longitud del eje menor</label><input id="Minor_Axis_Length" name="Minor_Axis_Length" type="number" min="0.000001" step="any" required placeholder="Ej. 85.094"><small>Minor_Axis_Length · mayor que 0</small></div>
+            <div class="field"><label for="Eccentricity">Excentricidad</label><input id="Eccentricity" name="Eccentricity" type="number" min="0" max="1" step="any" required placeholder="Ej. 0.929"><small>Eccentricity · entre 0 y 1</small></div>
+            <div class="field"><label for="Convex_Area">Área convexa</label><input id="Convex_Area" name="Convex_Area" type="number" min="1" step="1" required placeholder="Ej. 15617"><small>Convex_Area · entero, al menos igual al área</small></div>
+            <div class="field"><label for="Extent">Extensión</label><input id="Extent" name="Extent" type="number" min="0.000001" max="1" step="any" required placeholder="Ej. 0.573"><small>Extent · mayor que 0 y hasta 1</small></div>
+          </div>
+          <div class="actions">
+            <button class="button button-primary" id="submitButton" type="submit">Clasificar grano</button>
+            <button class="button button-secondary" id="exampleButton" type="button">Usar ejemplo real</button>
+            <button class="button button-text" id="clearButton" type="button">Limpiar</button>
+          </div>
+          <p class="help-line">El ejemplo corresponde a un registro del dataset Rice Cammeo/Osmancik. No introduzcas la clase: la predice el modelo.</p>
+          <div id="message" class="notice hidden" role="status" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <aside class="side">
+        <section class="card side-card" aria-labelledby="derivedTitle">
+          <div class="card-head"><div><h2 id="derivedTitle">Variables calculadas</h2><p>Se envían junto con las siete medidas.</p></div><span class="step-badge" aria-hidden="true">02</span></div>
+          <div class="computed">
+            <div class="computed-row"><span>Axis_Ratio</span><strong id="ratioValue">—</strong></div>
+            <div class="computed-row"><span>Solidity</span><strong id="solidityValue">—</strong></div>
+            <div class="computed-row"><span>Circularity</span><strong id="circularityValue">—</strong></div>
+          </div>
+          <p class="formula-note">Relación de ejes, proporción de área convexa y circularidad. Se calculan con las mismas fórmulas usadas en el entrenamiento.</p>
+        </section>
+        <section class="card side-card result-card" aria-labelledby="resultTitle">
+          <div class="card-head"><div><h2 id="resultTitle">Predicción</h2><p>Respuesta del modelo desplegado.</p></div><span class="step-badge" aria-hidden="true">03</span></div>
+          <div id="result" aria-live="polite"><div class="result-empty">Completa el formulario y selecciona “Clasificar grano”.</div></div>
+        </section>
+      </aside>
+    </div>
+    <footer class="footer"><span>Proyecto académico de clasificación binaria de arroz.</span><a href="/docs">Ver documentación de la API</a></footer>
+  </main>
+
+  <script>
+    const API_URL = "https://api-arroz-mlops.greenplant-490bf39b.centralus.azurecontainerapps.io/predecir";
+
+    const originals = ["Area", "Perimeter", "Major_Axis_Length", "Minor_Axis_Length", "Eccentricity", "Convex_Area", "Extent"];
+    const sample = {
+      Area: 15231,
+      Perimeter: 525.5789794921875,
+      Major_Axis_Length: 229.7498779296875,
+      Minor_Axis_Length: 85.09378814697266,
+      Eccentricity: 0.9288820028305054,
+      Convex_Area: 15617,
+      Extent: 0.5728955268859863
+    };
+    const form = document.getElementById("riceForm");
+    const submitButton = document.getElementById("submitButton");
+    const result = document.getElementById("result");
+    const message = document.getElementById("message");
+
+    function hideMessage() {
+      message.className = "notice hidden";
+      message.textContent = "";
+    }
+
+    function showMessage(text, kind) {
+      message.className = "notice " + kind;
+      message.textContent = text;
+    }
+
+    function readOriginals() {
+      const values = {};
+      for (const key of originals) {
+        const raw = document.getElementById(key).value;
+        if (raw === "") return null;
+        values[key] = key === "Area" || key === "Convex_Area" ? parseInt(raw, 10) : parseFloat(raw);
+        if (!Number.isFinite(values[key])) return null;
+      }
+      return values;
+    }
+
+    function buildPayload(values) {
+      return {
+        Area: values.Area,
+        Perimeter: values.Perimeter,
+        Major_Axis_Length: values.Major_Axis_Length,
+        Minor_Axis_Length: values.Minor_Axis_Length,
+        Eccentricity: values.Eccentricity,
+        Convex_Area: values.Convex_Area,
+        Extent: values.Extent,
+        Axis_Ratio: values.Major_Axis_Length / values.Minor_Axis_Length,
+        Solidity: values.Area / values.Convex_Area,
+        Circularity: 4 * Math.PI * values.Area / (values.Perimeter * values.Perimeter)
+      };
+    }
+
+    function updateDerived() {
+      const values = readOriginals();
+      const valid = values && values.Perimeter > 0 && values.Minor_Axis_Length > 0 && values.Convex_Area > 0;
+      const payload = valid ? buildPayload(values) : null;
+      const number = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 4 });
+      document.getElementById("ratioValue").textContent = payload ? number.format(payload.Axis_Ratio) : "—";
+      document.getElementById("solidityValue").textContent = payload ? number.format(payload.Solidity) : "—";
+      document.getElementById("circularityValue").textContent = payload ? number.format(payload.Circularity) : "—";
+    }
+
+    function errorText(detail) {
+      if (Array.isArray(detail)) {
+        return detail.map(function (item) {
+          const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : "dato";
+          return field + ": " + (item.msg || "valor inválido");
+        }).join(" · ");
+      }
+      return typeof detail === "string" ? detail : "No se pudo procesar la petición.";
+    }
+
+    form.addEventListener("input", function () { updateDerived(); hideMessage(); });
+    document.getElementById("exampleButton").addEventListener("click", function () {
+      for (const key of originals) document.getElementById(key).value = sample[key];
+      hideMessage();
+      updateDerived();
+      document.getElementById("Area").focus();
+    });
+    document.getElementById("clearButton").addEventListener("click", function () {
+      form.reset();
+      hideMessage();
+      updateDerived();
+      result.innerHTML = '<div class="result-empty">Completa el formulario y selecciona “Clasificar grano”.</div>';
+    });
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      hideMessage();
+      if (!form.reportValidity()) return;
+      const values = readOriginals();
+      if (!values) { showMessage("Completa todas las medidas con números válidos.", "error"); return; }
+      if (values.Convex_Area < values.Area) { showMessage("Convex_Area debe ser al menos igual a Area.", "error"); return; }
+      if (values.Major_Axis_Length < values.Minor_Axis_Length) { showMessage("El eje mayor debe ser al menos igual al eje menor.", "error"); return; }
+      const payload = buildPayload(values);
+      submitButton.disabled = true;
+      showMessage("Consultando el modelo. La primera consulta puede tardar hasta 2 minutos si el servicio estaba apagado.", "wait");
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          showMessage(errorText(data.detail), "error");
+          return;
+        }
+        if ((data.prediccion !== 0 && data.prediccion !== 1) || (data.clase !== "Cammeo" && data.clase !== "Osmancik")) {
+          showMessage("La API devolvió una respuesta inesperada.", "error");
+          return;
+        }
+        hideMessage();
+        const tone = data.prediccion === 1 ? "result-success" : "result-secondary";
+        result.innerHTML = '<div class="' + tone + '"><span class="result-label">Variedad identificada</span><div class="result-name"></div><span class="result-code"></span></div>';
+        result.querySelector(".result-name").textContent = data.clase;
+        result.querySelector(".result-code").textContent = "Código de clase: " + data.prediccion;
+      } catch (error) {
+        showMessage("No hubo conexión con la API. Revisa la URL configurada en API_URL e inténtalo de nuevo.", "error");
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    fetch("/health").then(function (response) { return response.json(); }).then(function (data) {
+      const ready = data.status === "ok" && data.databricks_configurado === true;
+      document.getElementById("statusDot").className = "status-dot " + (ready ? "ok" : "bad");
+      document.getElementById("statusText").textContent = ready ? "Servicio disponible" : "Servicio sin configurar";
+    }).catch(function () {
+      document.getElementById("statusDot").className = "status-dot bad";
+      document.getElementById("statusText").textContent = "Estado no disponible";
+    });
+  </script>
+</body>
+</html>

@@ -1,9 +1,11 @@
 """API de predicción para el modelo Rice Cammeo/Osmancik de Databricks."""
 
 import os
+from pathlib import Path
 
 import requests
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -41,6 +43,12 @@ class GranoArroz(BaseModel):
 
 
 app = FastAPI(title="API MLOps Arroz", description="Clasifica granos Cammeo u Osmancik")
+WEB_PAGE = Path(__file__).resolve().parent / "web" / "index.html"
+
+
+@app.get("/", include_in_schema=False)
+def inicio():
+    return FileResponse(WEB_PAGE)
 
 
 @app.get("/health")
